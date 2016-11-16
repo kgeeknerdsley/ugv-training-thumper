@@ -11,6 +11,6 @@ void loop() {
   servo1.write(75);
   delay(50);
   
-  
+  //TODO: Add a loop in here to make the servo continuously rotate?
 
 }
