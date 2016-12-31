@@ -16,17 +16,14 @@ def readNumber():
 
 while True:
         var = input("Enter 1-9: ")
-        if not var:
-                continue
+        writeNumber(var)
 
-writeNumber(var)
+        print "RPI: Hi Arduino, I sent you ", var
 
-print "RPI: Hi Arduino, I sent you ", var
+        time.sleep(1)
 
-time.sleep(1)
+        number = readNumber()
 
-number = readNumber()
-
-print "Arduino: Hey RPI, I received a digit ", number
+        print "Arduino: Hey RPI, I received a digit ", number
 
 print
