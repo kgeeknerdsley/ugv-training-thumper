@@ -1,4 +1,6 @@
 # ugv-training-thumper
 A basic repository for code relating to the Thumper training UGV.
 
-Please note all Arduino sketches must run in a folder of the same name. It'll autocreate one when you try to compile.
+The final code for Kitty is under final_autonomous_code.ino
+
+Use that if you're going to make any changes, but do submit them to the dev branch so we don't break it. At least harder than we have already. :)
