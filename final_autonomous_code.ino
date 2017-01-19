@@ -80,6 +80,7 @@ void loop(){
  * Each possibility has a preprogrammed move set to get her unstuck. Probably.
  * She doesn't like walls at shallow angles, but it's 10:00pm and I want to go to bed so we'll work on this after demo day.
  * TODO: add another ultrasonic for better coverage?
+ * TODO: perhaps put the ultrasonic on a constant sweep so it's always cognizant of its area
  */
 
   if(distance <= 36) {
