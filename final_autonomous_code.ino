@@ -8,6 +8,7 @@
  * 
  * Motor setup code and function goMotor() credit to Sparkfun's example code for the Monster Motor Shield
  * Ultrasonic calculations credit to Parallax datasheets
+ * Some servo code from Arduino's Sweep tutorial
  * 
  * UGV Apprentice Team, Winter Q 2017
  */
@@ -34,6 +35,9 @@ const int echoPin = 13;
 int duration, inches, cm; //variables! yay!
 int distance;
 int pos;
+
+bool lefts = true; //flags to see if the left and right directions are safe
+bool rights = true;
 
 void setup()
 {
@@ -63,31 +67,103 @@ void setup()
 
 void loop(){
 
-distance = testDistance(); //checks the distance and prints it to serial monitor
-Serial.println(distance);
+  distance = testDistance(); //checks the distance and prints it to serial monitor
+  Serial.println(distance);
+  
+  if(distance <= 0) { //resets bogus data from the ultrasonic to something usable
+    distance = 37;
+  }
 
-if(distance <= 0) { //resets bogus data from the ultrasonic to something usable
-  distance = 37;
-}
+/*Note on the driving algorithm
+ * 
+ * Kitty checks two flags to see which directions are safe, and then moves accordingly.
+ * Each possibility has a preprogrammed move set to get her unstuck. Probably.
+ * She doesn't like walls at shallow angles, but it's 10:00pm and I want to go to bed so we'll work on this after demo day.
+ * TODO: add another ultrasonic for better coverage?
+ */
 
-if(distance <= 36) { //algorithm for backing up, turning
-  digitalWrite(10, LOW);
-  brake();
-  delay(700);
-  backward();
-  delay(700);
-  brake();
-  delay(700);
-  left();
-  delay(700);
-  brake();
-  delay(700);
-}
+  if(distance <= 36) {
+    lefts = true; //assigns everything to true to reset from its last run
+    rights = true;
+    
+    digitalWrite(10, LOW); //turns off the forward light cause it ain't going forward
+    brake();
+    delay(700);
 
-digitalWrite(10, HIGH); //lights the "moving forward" led indicator
-forward();
+    for (pos = 90; pos <= 180; pos += 2) { //everybody look left
+      myservo.write(pos);              
+      delay(20);                       
+    }
 
-delay(100);
+    myservo.detach(); //leaves the servo in its position
+
+    distance = testDistance(); //tests the left distance
+
+    if(distance <= 36) { //makes the safety decision for left
+      Serial.println("Left side is not safe!");
+      lefts = false;
+    }
+
+    delay(500);
+
+    myservo.attach(3); //gets the servo ready to go to sweep
+
+    for (pos = 180; pos >= 0; pos -= 2) { //sweeps to the right, gets in position for right safety test
+      myservo.attach(3);
+      myservo.write(pos);              
+      delay(20);                       
+    }
+    
+    myservo.detach();  //same deal as before, waits, tests, then makes decision
+    
+    distance = testDistance();
+
+    if(distance <= 36) {
+      Serial.println("The right isn't safe!");
+      rights = false;
+    }
+
+    delay(500);
+
+    myservo.attach(3);
+
+    for (pos = 0; pos <= 90; pos += 2) { //resets eyes back to the front
+      myservo.attach(3);
+      myservo.write(pos);
+      delay(20);  
+  }
+
+    //OK IS TRUE
+    //UNSAFE IS FALSE
+    if(lefts && rights) { //if all clear, usual turn left then go
+      left();
+      delay(800);
+      brake();
+      delay(700);
+    } else if(lefts == true && rights == false) { //if right obstructed, turn left
+      left();
+      delay(800);
+      brake();
+      delay(700);
+    } else if(lefts == false && rights == true) { //if left obstructed, turn right
+      right();
+      delay(800);
+      brake();
+      delay(800); 
+    } else if(lefts == false && rights == false) { //if both sides obstructed, back up more than usual and turn left
+      reverse();
+      delay(1000);
+      brake();
+      delay(700);
+      left();
+      delay(600);
+    }
+  }
+  
+  digitalWrite(10, HIGH); //lights the "moving forward" led indicator
+  forward();
+  
+  delay(100);
 }
 
 void brake() { //full stop to motors
