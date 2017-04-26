@@ -1,3 +1,9 @@
+#RPI to Arduino pins
+# left, second top to A4
+# left, third top to A5
+# right, top to Vin
+# right, third top to GND
+
 import smbus
 import time
 
