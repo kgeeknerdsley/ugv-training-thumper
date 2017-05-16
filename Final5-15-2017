@@ -1,0 +1,340 @@
+#include <Servo.h> //includes servo library
+#include <Wire.h>
+
+
+#define BRAKEVCC 0 //defines all the ints for wheel rotation
+#define CW   1
+#define CCW  2
+#define BRAKEGND 3
+#define CS_THRESHOLD 100
+#define SLAVE_ADDRESS 0x04
+
+int number = 0;
+int state = 0;
+
+Servo myservo; //enables our servo
+
+int inApin[2] = {7, 4};  // INA: Clockwise input
+int inBpin[2] = {8, 9}; // INB: Counter-clockwise input
+int pwmpin[2] = {5, 6}; // PWM input
+int cspin[2] = {2, 3}; // CS: Current sense ANALOG input
+int enpin[2] = {0, 1}; // EN: Status of switches output (Analog pin)
+
+const int trigPin2 = 30;
+const int echoPin2 = 31;
+ 
+const int trigPin3 = 33;
+const int echoPin3 = 32;
+
+int duration, duration1, inches1, inches, cm; //variables! yay!
+int distance = 0;
+int distance1 = 0;
+//int distance2 = 0;
+//int inches2;
+int pos;
+
+int m1 = 100;
+int m2 = 100;
+int speedChange = 2;
+//char direction;
+int direction = 0;
+void setup()
+{
+  Serial.begin(9600); //everything getting set up, basically
+  
+   pinMode(trigPin2, OUTPUT); //sets up ultrasonic pins to work
+   pinMode(echoPin2, INPUT);
+
+   pinMode(trigPin3, OUTPUT); //sets up ultrasonic pins to work
+   pinMode(echoPin3, INPUT);
+
+  pinMode(13, OUTPUT);
+  //Serial.begin(9600); // start serial for output
+  // initialize i2c as slave
+  Wire.begin(SLAVE_ADDRESS);
+
+// define callbacks for i2c communication
+ Wire.onReceive(receiveData);
+/*
+   pinMode(trigPin4, OUTPUT); //sets up ultrasonic pins to work
+   pinMode(echoPin4, INPUT);
+*/  
+  // Initialize digital pins as outputs for motors
+  for (int i=0; i<2; i++)
+  {
+    pinMode(inApin[i], OUTPUT);
+    pinMode(inBpin[i], OUTPUT);
+    pinMode(pwmpin[i], OUTPUT);
+  }
+  // Initialize brakes for motors
+  for (int i=0; i<2; i++)
+  {
+    digitalWrite(inApin[i], LOW);
+    digitalWrite(inBpin[i], LOW);
+  }
+
+  pinMode(10, OUTPUT); //sets up the little blue LED
+}
+
+void sendData(){
+Wire.write(direction);
+}
+
+void loop()
+{
+  distance = testDistance();//checks the distance and prints it to serial monitor
+  distance1 = testDistance1();
+  //distance2 = testDistance2();
+  //Serial.println("Ultrasonic 1 Distance: ");
+  //Serial.print(distance);
+  //Serial.println("Ultrasonic 2 Distance: ");
+  //Serial.print(distance1);
+  //Serial.println("Ultrasonic 3 Distance: ");
+  //Serial.print(distance2);
+
+  digitalWrite(10, LOW); //turns the "moving forward" led indicator off
+
+  //if(Serial.available() > 0)
+ /* while(Wire.available())
+  {
+    direction = Wire.read();
+    //direction = Serial.read();  //for integers use Serial.parseInt()
+    //Serial.setTimeout(0);
+*/
+    if(direction == 2)
+    {  
+        m1 += speedChange;
+        m2 += speedChange;
+        forward();
+        Serial.println(m1);
+        Serial.println(m2);
+        //delay(50);
+    }
+    if(direction == 1)
+    {
+      m1 -= speedChange;
+      m2 += speedChange;
+      left();
+      Serial.println(m1);
+      Serial.println(m2);
+      //delay(50);
+    }
+
+/*    if(direction == 's')
+    {
+      m1 -= speedChange;
+      m2 -= speedChange;
+      reverse();
+      Serial.println(m1);
+      Serial.println(m2);
+      //delay(50);
+    }
+*/
+    if(direction == 3)
+    {
+       m1 += speedChange;
+       m2 -= speedChange;
+       right();
+       Serial.println(m1);
+       Serial.println(m2);
+       //delay(50);
+    }
+  Serial.setTimeout(0);
+//  }
+
+  while(distance != 36 && distance < 36)
+  {
+    m1 += speedChange;
+    m2 += speedChange;
+  }
+
+  while(distance != 36 && distance > 36)
+  {
+    m1 -= speedChange;
+    m2 -= speedChange;
+  }
+
+  /*
+  
+  if(distance <= 0 && distance1 <= 0) { //resets bogus data from the ultrasonic to something usable
+    distance = 40;
+    distance1 = 40;
+  }
+
+  if(distance <= 35 && distance > 15)
+  {
+    right();
+    delay(1000);
+
+    left();
+    delay(1000);
+
+    //forward();
+    delay(1000);
+
+    return;
+  }
+
+  if(distance1 <= 35 && distance1 > 15)
+  {
+    left();
+    delay(1000);
+
+    right();
+    delay(1000);
+
+    //forward();
+    delay(1000);
+
+    return;
+  }
+
+  if(distance <= 15 || distance1 <= 15)
+  {
+    brake();
+    delay(2000);
+
+    reverse();
+    delay(3000);
+
+    return;
+  }      
+
+  //forward();
+  
+  //delay(100);
+
+*/
+
+}
+void brake() { //full stop to motors
+  Serial.println("Stopping!");
+  motorGo(0, 0, 110);
+  motorGo(1, 0, 110);
+}
+void left() { //turns motors left
+  Serial.println("Left turning");
+  motorGo(0, CCW, m1);
+  motorGo(1, CCW, m2);
+}
+
+void right() { //turns motors right
+  Serial.println("Right turning");
+  motorGo(0, CW, m1);
+  motorGo(1, CW, m2);
+}
+
+void forward() { //drives motors forwards
+  Serial.println("Going forward!");
+  motorGo(0, CCW, m1);
+  motorGo(1, CW, m1);
+  digitalWrite(10, HIGH); //lights the "moving forward" led indicator
+}
+
+void reverse() { //drives motors in reverse
+  Serial.println("Going backward!");
+  motorGo(0, CCW, m1);
+  motorGo(1, CW, m1);
+}
+void receiveData(int byteCount)
+{
+ while(Wire.available())
+  {
+    direction = Wire.read();
+    //direction = Serial.read();  //for integers use Serial.parseInt()
+    //Serial.setTimeout(0);
+  }
+}
+void motorGo(uint8_t motor, uint8_t direct, uint8_t pwm) //Sparkfun's code to get the motors to run
+{
+  if (motor <= 1)
+  {
+    if (direct <=4)
+    {
+      // Set inA[motor]
+      if (direct <=1)
+        digitalWrite(inApin[motor], HIGH);
+      else
+        digitalWrite(inApin[motor], LOW);
+
+      // Set inB[motor]
+      if ((direct==0)||(direct==2))
+        digitalWrite(inBpin[motor], HIGH);
+      else
+        digitalWrite(inBpin[motor], LOW);
+
+      analogWrite(pwmpin[motor], pwm);
+    }
+  }
+}
+
+/* void sendData(){
+Wire.write(direction);
+}
+*/
+int testDistance() { //algorithm to check distance and spit out an integer value
+  pinMode(trigPin2, OUTPUT);
+  digitalWrite(trigPin2, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin2, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin2, LOW);
+
+  pinMode(echoPin2, INPUT);
+  duration = pulseIn(echoPin2, HIGH);
+
+  inches = microsecondsToInches(duration);
+
+  return inches;
+  delay(1000);
+}
+
+int testDistance1()
+{
+  pinMode(trigPin3, OUTPUT);
+  digitalWrite(trigPin3, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin3, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin3, LOW);
+
+  pinMode(echoPin3, INPUT);
+  duration1 = pulseIn(echoPin3, HIGH);
+
+  inches1 = microsecondsToInches(duration1);
+
+  return inches1;
+  delay(1000);
+  
+}
+
+/*
+int testDistance2()
+{
+  pinMode(trigPin4, OUTPUT);
+  digitalWrite(trigPin4, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin4, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin4, LOW);
+
+  pinMode(echoPin4, INPUT);
+  duration2 = pulseIn(echoPin4, HIGH);
+
+  inches2 = microsecondsToInches(duration2);
+
+  return inches2;
+  delay(1000);
+  
+}
+ */
+
+
+long microsecondsToInches(long microseconds) { //math.
+  //calculation comes from Parallax's datasheet
+  return microseconds / 74 / 2;
+}
+ 
+long microsecondsToCentimeters(long microseconds) { //also math.
+  return microseconds / 29 / 2;
+}
