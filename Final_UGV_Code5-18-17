@@ -154,9 +154,9 @@ void receiveData(int byteCount)
     {
       direction = Wire.read();
 
-    /*if*/while(direction == 2)
+    if (direction == 2)
     {  
-        Serial.println(direction);
+        Serial.println(2);
         //m1 += speedChange;
         //m2 += speedChange;
         forward();
@@ -164,32 +164,32 @@ void receiveData(int byteCount)
         Serial.println(m2);
         //delay(50);
     }
-    /*if*/while(direction == 1)
+    if(direction == 1)
     {
-      Serial.println(direction);
+      Serial.println(1);
       //m1 -= speedChange;
       //m2 += speedChange;
-      left();
+      right();
       Serial.println(m1);
       Serial.println(m2);
       //delay(50);
     }
 
-    /*if*/while(direction == 3)
+    if(direction == 3)
     {
-       Serial.println(direction);
+       Serial.println(3);
 
        //m1 += speedChange;
        //m2 -= speedChange;
-       right();
+       left();
        Serial.println(m1);
        Serial.println(m2);
        //delay(50);
     }
 
-    /*if*/while(direction == 4)
+    if(direction == 4)
     {
-       Serial.println(direction);
+       Serial.println(4);
 
        m1 = 70;
        m2 = 70;
@@ -218,14 +218,14 @@ void brake() { //full stop to motors
 }
 void left() { //turns motors left
   Serial.println("Left turning");
-  motorGo(0, CCW, m1);
-  motorGo(1, CCW, m2);
+  motorGo(0, CCW, 100);
+  motorGo(1, CCW, 100);
 }
 
 void right() { //turns motors right
   Serial.println("Right turning");
-  motorGo(0, CW, m1);
-  motorGo(1, position, m2);
+  motorGo(0, CW, 100);
+  motorGo(1, CW, 100);
 }
 
 void forward() { //drives motors forwards
